@@ -172,3 +172,9 @@ cython_debug/
 
 # PyPI configuration file
 .pypirc
+
+.env
+venv
+credentials.json
+token_sheets.json
+token.json

@@ -1,0 +1,14 @@
+streamlit
+speechrecognition
+pyaudio
+google-api-python-client
+google-auth
+google-auth-oauthlib
+pandas
+python-dotenv
+elevenlabs
+langchain
+langgraph
+openpyxl
+langchain-groq
+pyttsx3
