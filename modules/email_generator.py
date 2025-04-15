@@ -105,22 +105,9 @@ def generate_email(recipient_name: str, purpose: str, recipient_email: str = Non
             return email_address, subject, cleaned_content
             
         except Exception as e:
-            # If LLM fails, use a fallback template
+            # If LLM generation fails, notify and return a clear message
             print(f"❌ LLM generation failed: {str(e)}")
-            print("Using fallback template instead...")
-            
-            # Default email template
-            subject = f"Regarding: {purpose[:50]}"
-            body = f"""Dear {recipient_name},
-
-I hope this email finds you well. I wanted to reach out regarding {purpose}.
-
-Please let me know if you're available to discuss this matter further.
-
-Best regards,
-{sender_name}
-"""
-            return email_address, subject, body
+            return email_address, None, "Email is not generated. Please try again."
             
     except Exception as e:
         print(f"❌ Email generation completely failed: {str(e)}")
