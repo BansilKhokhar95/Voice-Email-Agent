@@ -78,7 +78,7 @@ def transcribe_speech():
         
         with sr.Microphone() as source:
             print("🎙️ Speak now...")
-            audio = recognizer.listen(source, timeout=5)
+            audio = recognizer.listen(source, timeout=5, phrase_time_limit=10)
             
             text = recognizer.recognize_google(audio)
             print(f"📝 Transcribed with Google: {text}")
