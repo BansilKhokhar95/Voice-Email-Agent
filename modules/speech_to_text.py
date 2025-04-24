@@ -86,3 +86,36 @@ def transcribe_speech():
     except Exception as e:
         print(f"❌ Google speech recognition failed: {e}")
         return ""
+
+
+
+# def transcribe_speech(audio_file_path):
+#     """
+#     Transcribe speech from an audio file using Google's speech recognition.
+#     """
+#     try:
+#         print("🎤 Using Google Speech Recognition...")
+
+#         recognizer = sr.Recognizer()
+
+#         # Open the audio file
+#         with sr.AudioFile(audio_file_path) as source:
+#             print("🔉 Processing audio file...")
+#             audio = recognizer.record(source)  # Read the entire audio file
+
+#         # Use Google's recognition service to transcribe the audio
+#         text = recognizer.recognize_google(audio)
+#         print(f"📝 Transcribed with Google: {text}")
+#         return text
+
+#     except sr.UnknownValueError:
+#         print("❌ Could not understand the audio.")
+#         return "Sorry, I could not understand the audio."
+    
+#     except sr.RequestError as e:
+#         print(f"❌ Error with the speech recognition service; {e}")
+#         return "Could not request results from Google Speech Recognition service."
+
+#     except Exception as e:
+#         print(f"❌ An error occurred during transcription: {e}")
+#         return "An error occurred while transcribing the audio."
