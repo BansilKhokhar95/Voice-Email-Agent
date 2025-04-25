@@ -28,6 +28,9 @@ pending_emails = {}
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text("👋 Hello! Send me a voice message to compose an email!")
 
+# Add at the top for global dictionary
+user_awaiting_recipient = {}
+
 async def handle_voice(update: Update, context: ContextTypes.DEFAULT_TYPE):
     recognizer = sr.Recognizer()
     user_id = update.message.from_user.id
@@ -42,7 +45,7 @@ async def handle_voice(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await file.download_to_drive(ogg_file)
 
         # Convert OGG to WAV using ffmpeg-python
-        ffmpeg_bin = r"C:\ffmpeg\bin\ffmpeg.exe"  # Full path to ffmpeg
+        ffmpeg_bin = r"C:\ffmpeg\bin\ffmpeg.exe"
         stream = ffmpeg.input(ogg_file)
         stream = ffmpeg.output(stream, wav_file)
         ffmpeg.run(stream, cmd=ffmpeg_bin)
@@ -54,11 +57,16 @@ async def handle_voice(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
         await update.message.reply_text(f"📝 Transcribed: {text}")
 
-        # Generate email using updated function
+        # Generate email
         recipient_name, recipient_email, subject, body = generate_email(text)
 
         if not recipient_email:
-            await update.message.reply_text(f"❌ Contact '{recipient_name}' not found.")
+            user_awaiting_recipient[user_id] = {
+                "text": text,
+                "subject": subject,
+                "body": body
+            }
+            await update.message.reply_text(f"❌ Contact '{recipient_name}' not found.\n\nPlease enter the correct recipient's name.")
             return
 
         email_data = {
@@ -69,8 +77,7 @@ async def handle_voice(update: Update, context: ContextTypes.DEFAULT_TYPE):
         }
         pending_emails[user_id] = email_data
 
-        # Ask for confirmation
-        confirm_markup = InlineKeyboardMarkup([[
+        confirm_markup = InlineKeyboardMarkup([[ 
             InlineKeyboardButton("✅ Confirm", callback_data="confirm"),
             InlineKeyboardButton("❌ Cancel", callback_data="cancel")
         ]])
@@ -93,6 +100,41 @@ async def handle_voice(update: Update, context: ContextTypes.DEFAULT_TYPE):
                     os.remove(f)
                 except PermissionError:
                     pass
+
+async def handle_recipient_name_retry(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    user_id = update.message.from_user.id
+    new_name = update.message.text.strip()
+
+    if user_id not in user_awaiting_recipient:
+        await update.message.reply_text("⚠️ No email request pending. Please send a new voice message.")
+        return
+
+    data = user_awaiting_recipient[user_id]
+    recipient_email = get_email_from_name(new_name)
+
+    if not recipient_email:
+        await update.message.reply_text(f"❌ Contact '{new_name}' not found in the sheet.")
+        user_awaiting_recipient.pop(user_id, None)
+        return
+
+    email_data = {
+        'recipient': new_name,
+        'recipient_email': recipient_email,
+        'subject': data["subject"],
+        'body': data["body"]
+    }
+    pending_emails[user_id] = email_data
+    user_awaiting_recipient.pop(user_id, None)
+
+    confirm_markup = InlineKeyboardMarkup([[ 
+        InlineKeyboardButton("✅ Confirm", callback_data="confirm"),
+        InlineKeyboardButton("❌ Cancel", callback_data="cancel")
+    ]])
+
+    await update.message.reply_text(
+        f"📨 Email Preview:\n\nTo: {recipient_email}\nSubject: {data['subject']}\n\n{data['body']}",
+        reply_markup=confirm_markup
+    )
 
 async def handle_confirmation(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
@@ -130,9 +172,7 @@ def run_bot():
     app.add_handler(CommandHandler("start", start))
     app.add_handler(MessageHandler(filters.VOICE, handle_voice))
     app.add_handler(CallbackQueryHandler(handle_confirmation))
+    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_recipient_name_retry))
 
     print("🤖 Telegram Bot is running...")
     app.run_polling()
-
-if __name__ == "__main__":
-    run_bot()
